@@ -10,40 +10,37 @@ Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt 
 
 ```mermaid
 flowchart TD
-    A(["/autopilot [mode]"]) --> B["Backup workspace\ncp -r, excludes node_modules/.git/etc"]
+    A(["/autopilot [mode]"]) --> B["Backup workspace\ncp -r, excludes node_modules / .git / etc"]
     B --> C["Merge permissions template\ninto settings.local.json"]
     C --> D["Inject CLAUDE.md block\nautopilot rules + mode placeholders"]
     D --> E["Write state file\nmode / backupPath / workspacePath / log"]
     E --> F(["Autopilot active — enter your task"])
 
     F --> G["User enters task prompt"]
-    G --> H["Claude executes autonomously\nzero interrupts"]
+    G --> SPLIT{"Mode?"}
 
-    H --> I{"Mode?"}
+    SPLIT -->|"strict / normal"| SUDO{"Needs sudo?\nfirst time"}
+    SUDO -->|yes| ASK["Ask ONE question:\nwill you allow sudo?"]
+    ASK -->|yes| CONF["Check autopilot-sudo.conf\nread or save password"]
+    CONF --> EXEC1
+    SUDO -->|"saved / not needed"| EXEC1["Claude executes autonomously\nallowlist-based — logs every tool call"]
 
-    I -->|"strict / normal"| J{"Needs sudo?\nfirst time"}
-    J -->|yes| K["Ask ONE question:\nwill you allow sudo?"]
-    K -->|yes| L["Check autopilot-sudo.conf\nread or save password"]
-    L --> H
-    J -->|"saved"| H
+    SPLIT -->|yolo| EXEC2["Claude executes autonomously\nbypassPermissions — zero prompts\nlogs every tool call"]
 
-    I -->|yolo| H
+    EXEC1 --> GATE(["Please test what was built.\nOr add/change anything — just type it."])
+    GATE --> RESP{"User response"}
+    RESP -->|"more requirements"| IMP["Implement autonomously"]
+    IMP --> GATE
+    RESP -->|"error"| REST["Restore from backup\nautopilot-restore.sh"]
+    REST --> REIMP["Re-implement from scratch"]
+    REIMP --> GATE
+    RESP -->|"success"| CONFIRM(["Complete. Test again or end?"])
+    CONFIRM -->|"test again"| GATE
+    CONFIRM -->|"end"| CLEAN
 
-    H --> M{"Mode?"}
-    M -->|"strict / normal"| N(["Please test what was built.\nOr add/change anything."])
-    N --> O{"User response"}
-    O -->|"more requirements"| P["Implement autonomously"]
-    P --> N
-    O -->|"error"| Q["Restore from backup\nautopilot-restore.sh"]
-    Q --> R["Re-implement fixes\nfrom scratch"]
-    R --> N
-    O -->|"success"| S(["Complete. Test again or end?"])
-    S -->|"test again"| N
-    S -->|"end"| T
-
-    M -->|yolo| T["Delete backup\nrm -rf backupPath"]
-    T --> U["Remove CLAUDE.md block\nrestore settings"]
-    U --> V(["Autopilot OFF"])
+    EXEC2 --> CLEAN["Auto-delete backup\nrm -rf backupPath"]
+    CLEAN --> TEARDOWN["Remove CLAUDE.md block\nrestore settings.local.json"]
+    TEARDOWN --> DONE(["Autopilot OFF"])
 ```
 
 For terminals that cannot render Mermaid:

@@ -7,8 +7,8 @@
       "Bash(cp *)", "Bash(touch *)", "Bash(which *)",
       "Bash(curl *)", "Bash(pip *)", "Bash(pip3 *)", "Bash(brew *)",
       "Bash(apt *)", "Bash(apt-get *)", "Bash(systemctl *)", "Bash(chmod *)",
-      "Bash(mv *)", "Bash(rm *)", "Bash(tar *)", "Bash(unzip *)",
-      "Bash(env *)", "Bash(export *)", "Bash(npx *)", "Bash(pnpm *)",
+      "Bash(mv *)", "Bash(tar *)", "Bash(unzip *)",
+      "Bash(env *)", "Bash(npx *)", "Bash(pnpm *)",
       "Read(**)", "Edit(**)", "Write(**)", "mcp__*"
     ],
     "defaultMode": "auto"

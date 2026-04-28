@@ -37,14 +37,18 @@ fi
 
 # 3. Remove statusLine patch from settings.json
 if [ -f "$SETTINGS" ]; then
-    python3 - "$SETTINGS" "$STATUSLINE_CMD" <<'PYEOF'
+    python3 - "$SETTINGS" "$STATUSLINE_CMD" <<'PYEOF' || echo "Warning: statusLine removal failed. Check settings.json is valid JSON."
 import json, sys
 
 settings_path = sys.argv[1]
 cmd_to_remove = sys.argv[2]
 
-with open(settings_path) as f:
-    settings = json.load(f)
+try:
+    with open(settings_path) as f:
+        settings = json.load(f)
+except (json.JSONDecodeError, IOError) as e:
+    print(f"Warning: Could not read settings: {e}", file=sys.stderr)
+    sys.exit(1)
 
 existing = settings.get("statusLine", {}).get("command", "")
 
@@ -65,13 +69,17 @@ fi
 
 # 4. Remove autopilot-logger hook from settings.json
 if [ -f "$SETTINGS" ]; then
-    python3 - "$SETTINGS" <<'PYEOF'
+    python3 - "$SETTINGS" <<'PYEOF' || echo "Warning: hook removal failed. Check settings.json is valid JSON."
 import json, sys
 
 settings_path = sys.argv[1]
 
-with open(settings_path) as f:
-    settings = json.load(f)
+try:
+    with open(settings_path) as f:
+        settings = json.load(f)
+except (json.JSONDecodeError, IOError) as e:
+    print(f"Warning: Could not read settings: {e}", file=sys.stderr)
+    sys.exit(1)
 
 hooks = settings.get("hooks", {})
 post = hooks.get("PostToolUse", [])

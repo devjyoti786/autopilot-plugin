@@ -35,11 +35,15 @@ EXCLUDES=(
 if command -v rsync &>/dev/null; then
     rsync -a "${EXCLUDES[@]}" "$WORKSPACE/" "$BACKUP_DIR/"
 else
-    # Fallback: cp -r then remove excluded dirs
+    # Fallback: cp -r then clean excluded patterns recursively
     cp -r "$WORKSPACE/." "$BACKUP_DIR/"
+    # Remove excluded directories recursively (prune to avoid descending into them)
     for excl in node_modules .git __pycache__ .venv venv dist build .next .cache; do
-        rm -rf "$BACKUP_DIR/$excl" 2>/dev/null || true
+        find "$BACKUP_DIR" -type d -name "$excl" -prune -exec rm -rf {} + 2>/dev/null || true
     done
+    # Remove excluded file patterns
+    find "$BACKUP_DIR" -name '*.pyc' -delete 2>/dev/null || true
+    find "$BACKUP_DIR" -name '.DS_Store' -delete 2>/dev/null || true
 fi
 
 # Output the backup path (captured by the skill)

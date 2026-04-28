@@ -22,14 +22,18 @@ fi
 
 # 3. Patch statusLine in settings.json
 if [ -f "$SETTINGS" ]; then
-    python3 - "$SETTINGS" "$STATUSLINE_CMD" <<'PYEOF'
+    python3 - "$SETTINGS" "$STATUSLINE_CMD" <<'PYEOF' || echo "Warning: statusLine patch failed. Check settings.json is valid JSON."
 import json, sys
 
 settings_path = sys.argv[1]
 new_cmd = sys.argv[2]
 
-with open(settings_path) as f:
-    settings = json.load(f)
+try:
+    with open(settings_path) as f:
+        settings = json.load(f)
+except (json.JSONDecodeError, IOError) as e:
+    print(f"Warning: Could not read settings: {e}", file=sys.stderr)
+    sys.exit(1)
 
 existing = settings.get("statusLine", {}).get("command", "")
 

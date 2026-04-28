@@ -169,7 +169,7 @@ claude auto-mode defaults
 claude auto-mode critique
 ```
 
-> Auto mode requires a Claude Team, Enterprise, Max, or API plan. Not available on Pro. Run `claude --enable-auto-mode` to enable it if you haven't already.
+> Auto mode requires a Claude Pro, Team, Enterprise, Max, or API plan. Run `claude --enable-auto-mode` to enable it if you haven't already.
 
 ---
 

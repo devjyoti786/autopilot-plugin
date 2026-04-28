@@ -7,6 +7,21 @@
       "Bash(cp *)", "Bash(touch *)", "Bash(which *)",
       "Read(**)", "Edit(**)", "Write(**)", "mcp__*"
     ],
+    "deny": [
+      "Bash(rm -rf *)", "Bash(rm -Rf *)", "Bash(rm -rf*)",
+      "Bash(git push --force*)", "Bash(git push -f *)", "Bash(git push -f*)"
+    ],
     "defaultMode": "auto"
+  },
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Claude Code autopilot strict mode. Treat this as a development environment requiring caution. Destructive local operations and force pushes are hard-blocked at the permissions layer. Flag anything that modifies files outside the working directory or interacts with production systems."
+    ],
+    "soft_deny": [
+      "$defaults",
+      "DROP TABLE or DROP DATABASE statements executed against any database without explicit session-level user instruction naming the exact table or database",
+      "Writing plaintext passwords, API keys, or secrets to tracked files (files that would be committed to git)"
+    ]
   }
 }

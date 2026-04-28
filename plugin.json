@@ -1,0 +1,12 @@
+{
+  "name": "autopilot",
+  "displayName": "Claude Code Autopilot",
+  "version": "1.0.0",
+  "description": "Zero-interrupt autonomous mode. User enters prompt, Claude decides everything.",
+  "skills": ["autopilot", "autopilot-help"],
+  "hooks": {
+    "postToolUse": { "command": "hooks/autopilot-logger.sh", "timeout": 5000 }
+  },
+  "install": { "script": "scripts/install.sh" },
+  "uninstall": { "script": "scripts/uninstall.sh" }
+}

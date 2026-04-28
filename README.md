@@ -1,6 +1,6 @@
 # Claude Code Autopilot
 
-Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt task execution inside Claude Code. You enter a prompt, Claude executes the entire task — file edits, shell commands, installs, git operations — without stopping to ask for confirmations. When done, it presents a test gate so you can verify results or request changes before the session closes.
+Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt task execution inside Claude Code. You enter a prompt, Claude executes the entire task — file edits, shell commands, installs, git operations — without stopping to ask for confirmations. In `normal`/`strict` mode a test gate lets you verify results before closing. In `yolo` mode Claude declares complete and cleans up automatically — zero human interaction from start to finish.
 
 ![version](https://img.shields.io/badge/version-1.0.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-Claude%20Code-blueviolet)
 
@@ -10,34 +10,40 @@ Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt 
 
 ```mermaid
 flowchart TD
-    A([User types /autopilot normal]) --> B[Backup workspace\ncp -r, excludes node_modules/.git/etc]
-    B --> C[Merge permissions template\ninto settings.local.json]
-    C --> D[Inject CLAUDE.md block\nautopilot rules + placeholders]
-    D --> E[Register PostToolUse logger hook]
-    E --> F[Write state file\nmode/backupPath/workspacePath/log]
-    F --> G([Autopilot NORMAL active\nEnter your task])
+    A(["/autopilot [mode]"]) --> B["Backup workspace\ncp -r, excludes node_modules/.git/etc"]
+    B --> C["Merge permissions template\ninto settings.local.json"]
+    C --> D["Inject CLAUDE.md block\nautopilot rules + mode placeholders"]
+    D --> E["Write state file\nmode / backupPath / workspacePath / log"]
+    E --> F(["Autopilot active — enter your task"])
 
-    G --> H[User enters task prompt]
-    H --> I[Claude executes autonomously\nzero interrupts]
-    I --> J{Needs sudo?}
-    J -->|First time| K[Ask ONE question:\nwill you allow sudo?]
-    K -->|Yes| L[Check autopilot-sudo.conf\nread or save password]
-    L --> I
-    J -->|Password saved| I
+    F --> G["User enters task prompt"]
+    G --> H["Claude executes autonomously\nzero interrupts"]
 
-    I --> M([Please test what was built.\nOr add/change anything — just type it.])
-    M --> N{User response}
-    N -->|Types additional requirements| O[Implement autonomously]
-    O --> M
-    N -->|Reports error| P[Restore from backup\nautopilot-restore.sh]
-    P --> Q[Re-implement fixes\nfrom scratch]
-    Q --> M
-    N -->|Confirms success| R([Complete. Test again or end?])
-    R -->|Test again| M
-    R -->|End| S[Delete backup\nrm -rf backupPath]
-    S --> T[Remove CLAUDE.md block]
-    T --> U[Remove hook + restore settings]
-    U --> V([Autopilot OFF])
+    H --> I{"Mode?"}
+
+    I -->|"strict / normal"| J{"Needs sudo?\nfirst time"}
+    J -->|yes| K["Ask ONE question:\nwill you allow sudo?"]
+    K -->|yes| L["Check autopilot-sudo.conf\nread or save password"]
+    L --> H
+    J -->|"saved"| H
+
+    I -->|yolo| H
+
+    H --> M{"Mode?"}
+    M -->|"strict / normal"| N(["Please test what was built.\nOr add/change anything."])
+    N --> O{"User response"}
+    O -->|"more requirements"| P["Implement autonomously"]
+    P --> N
+    O -->|"error"| Q["Restore from backup\nautopilot-restore.sh"]
+    Q --> R["Re-implement fixes\nfrom scratch"]
+    R --> N
+    O -->|"success"| S(["Complete. Test again or end?"])
+    S -->|"test again"| N
+    S -->|"end"| T
+
+    M -->|yolo| T["Delete backup\nrm -rf backupPath"]
+    T --> U["Remove CLAUDE.md block\nrestore settings"]
+    U --> V(["Autopilot OFF"])
 ```
 
 For terminals that cannot render Mermaid:
@@ -64,28 +70,40 @@ For terminals that cannot render Mermaid:
       ▼                                                          │
  Claude executes ──► zero interrupts ──► logs every tool call    │
       │                                                          │
-      ▼                                                          │
- "Please test [X]. Add/change anything? Just type it."          │
-      │                                                          │
-      ├─► Error reported ──► restore from backup ◄──────────────┘
-      │   auto-debug, re-implement
+      ├─── strict/normal ──────────────────────────────────────  │
+      │         │                                                │
+      │         ▼                                                │
+      │    [sudo needed? ask once → save to autopilot-sudo.conf] │
+      │         │                                                │
+      │         ▼                                                │
+      │    "Please test [X]. Add/change anything? Just type it." │
+      │         │                                                │
+      │         ├─► Error ──► restore from backup ◄─────────────┘
+      │         │    auto-debug, re-implement
+      │         │
+      │         ├─► Additional requirements ──► implement ──► loop
+      │         │
+      │         └─► Success: "Complete. Test again or end?"
+      │                  └─► "end" ──► Delete backup ──► off
       │
-      ├─► Additional requirements ──► implement autonomously ──► loop
-      │
-      └─► Success: "Complete. Test again or end?"
-              │
-              └─► "end" ──► Delete backup ──► /autopilot off
+      └─── yolo ──────────────────────────────────────────────────
+                │
+                ▼
+           [no sudo consent, no test gate, no end confirmation]
+                │
+                ▼
+           Auto-delete backup ──► /autopilot off
 ```
 
 ---
 
 ## Safety Levels
 
-| Mode | Auto-approves | Still pauses for | Use case |
-|------|--------------|-----------------|----------|
-| `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push, DROP TABLE, credential writes | Safe coding tasks |
-| `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | Nothing (logs risky ops) | Most dev tasks |
-| `yolo` | Everything (dangerouslySkipPermissions) | Nothing | Trusted automation, CI |
+| Mode | Auto-approves | Pauses for | Human interaction |
+|------|--------------|------------|-------------------|
+| `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push, DROP TABLE, credential writes | Sudo consent (once) + test gate + end confirmation |
+| `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | Nothing (logs risky ops) | Sudo consent (once) + test gate + end confirmation |
+| `yolo` | Everything (`bypassPermissions`) | Nothing | **None** — fully autonomous start to finish |
 
 ---
 
@@ -145,7 +163,7 @@ Then just type your task. That's it.
 | `/autopilot status` | Show current mode, backup path, log path |
 | `/autopilot-help` | Full reference card |
 
-### The Test Gate
+### The Test Gate (strict / normal only)
 
 Before completing any task, Claude will say:
 
@@ -154,6 +172,8 @@ Before completing any task, Claude will say:
 - **Confirm success** → "Complete. Test again or end?"
 - **Report an error** → Claude auto-restores from backup and re-fixes
 - **Type more requirements** → Claude implements them, re-presents the gate
+
+> **Yolo mode skips the test gate entirely.** Claude declares complete, auto-deletes the backup, and runs `/autopilot off` — no user input needed.
 
 ---
 
@@ -184,11 +204,12 @@ bash ~/.claude/plugins/autopilot-plugin/scripts/autopilot-restore.sh \
 ### Backup Lifecycle
 
 ```
-/autopilot on  → backup created
-   task runs   → backup preserved throughout
-  test passes  → backup preserved until user says "end"
-   user: end   → backup deleted (/autopilot off)
-   crash/kill  → backup survives (recoverable manually)
+/autopilot on       → backup created (all modes)
+   task runs        → backup preserved throughout
+   [strict/normal]  → backup preserved until user says "end"
+   user: end        → backup deleted (/autopilot off)
+   [yolo]           → backup auto-deleted on task completion
+   crash/kill       → backup survives (recoverable manually)
 ```
 
 ---
@@ -220,11 +241,13 @@ tail -f $(cat ~/.claude/autopilot-state.json | python3 -c "import json,sys,os; d
 
 ## Sudo Password Persistence
 
-When autopilot first needs `sudo`, it asks one question:
+**strict / normal mode:** When autopilot first needs `sudo`, it asks one question:
 
 > "If I require sudo permissions or a password, will you allow me to execute?"
 
 If you allow it, the password is saved to `~/.claude/autopilot-sudo.conf` (chmod 600) for future sessions — you will never be asked again.
+
+**yolo mode:** The consent question is skipped entirely. `bypassPermissions` is active, so sudo commands run directly without prompting.
 
 > **Security warning:** The password is stored in plaintext. `chmod 600` provides user-level protection only. Do not use this feature on shared or multi-user machines.
 
@@ -323,12 +346,16 @@ rm -f ~/.claude/autopilot-sudo.conf
 | File | Purpose |
 |------|---------|
 | `plugin.json` | Plugin manifest |
+| `.claude-plugin/marketplace.json` | Local marketplace registration |
+| `.claude-plugin/plugin.json` | Plugin metadata for marketplace |
 | `skills/autopilot.md` | `/autopilot` command logic |
+| `skills/autopilot/SKILL.md` | Symlink for Claude Code skill discovery |
 | `skills/autopilot-help.md` | `/autopilot-help` reference |
+| `skills/autopilot-help/SKILL.md` | Symlink for Claude Code skill discovery |
 | `templates/strict.json` | Strict mode permission delta |
 | `templates/normal.json` | Normal mode permission delta |
-| `templates/yolo.json` | Yolo mode (bypass all permissions) |
-| `claude-md-blocks/autopilot-instructions.md` | CLAUDE.md injection template |
+| `templates/yolo.json` | Yolo mode (`bypassPermissions`) |
+| `claude-md-blocks/autopilot-instructions.md` | CLAUDE.md injection template (mode-conditional rules) |
 | `hooks/autopilot-logger.sh` | PostToolUse audit logger |
 | `scripts/autopilot-backup.sh` | Workspace backup (cp -r) |
 | `scripts/autopilot-restore.sh` | Workspace restore (cp -r) |

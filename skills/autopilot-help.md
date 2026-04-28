@@ -1,3 +1,8 @@
+---
+name: autopilot-help
+description: Quick reference card for Claude Code Autopilot — commands, safety levels, backup/restore, test-gate flow
+---
+
 # Autopilot Help — Quick Reference
 
 ## What is autopilot mode?

@@ -1,3 +1,8 @@
+---
+name: autopilot
+description: Activate zero-interrupt autonomous mode. Usage: /autopilot [strict|normal|yolo|off|status]
+---
+
 # Autopilot Skill
 
 This skill enables and manages autopilot mode for Claude Code. Read and follow the steps below based on which command the user invoked.

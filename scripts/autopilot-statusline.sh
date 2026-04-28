@@ -15,4 +15,7 @@ except:
     pass
 " 2>/dev/null)
 
-[ -n "$MODE" ] && echo -n "[AP:${MODE^^}]"
+if [ -n "$MODE" ]; then
+    echo -n "[AP:${MODE^^}]"
+fi
+exit 0

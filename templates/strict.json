@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)", "Bash(npm *)", "Bash(node *)", "Bash(python3 *)",
+      "Bash(uv *)", "Bash(ls *)", "Bash(find *)", "Bash(mkdir *)",
+      "Bash(cat *)", "Bash(echo *)", "Bash(grep *)", "Bash(sed *)",
+      "Bash(cp *)", "Bash(touch *)", "Bash(which *)",
+      "Read(**)", "Edit(**)", "Write(**)", "mcp__*"
+    ],
+    "defaultMode": "auto"
+  }
+}

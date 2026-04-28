@@ -1,0 +1,7 @@
+{
+  "name": "autopilot",
+  "displayName": "Claude Code Autopilot",
+  "version": "1.0.0",
+  "description": "Zero-interrupt autonomous mode. User enters prompt, Claude decides everything.",
+  "skills": ["autopilot", "autopilot-help"]
+}

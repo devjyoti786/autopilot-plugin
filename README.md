@@ -276,6 +276,8 @@ Nothing is shown when autopilot is off.
 ```mermaid
 graph LR
     subgraph Plugin["Plugin Files"]
+        MP[".claude-plugin/<br/>marketplace.json"]
+        MPJ[".claude-plugin/<br/>plugin.json"]
         PJ["plugin.json"]
         SK["skills/autopilot.md"]
         SH["skills/autopilot-help.md"]
@@ -289,6 +291,10 @@ graph LR
         UN["scripts/uninstall.sh"]
     end
 
+    subgraph Discovery["Claude Code Discovery"]
+        CC["Claude Code UI<br/>slash commands"]
+    end
+
     subgraph Runtime["Runtime State"]
         ST["~/.claude/<br/>autopilot-state.json"]
         SLC["~/.claude/<br/>settings.local.json"]
@@ -299,9 +305,14 @@ graph LR
         SUP["~/.claude/<br/>autopilot-sudo.conf"]
     end
 
+    MP -- registers --> CC
+    MPJ -- metadata --> CC
+    CC -- invokes --> SK
+    CC -- invokes --> SH
     SK -- reads --> TM
+    SK -- reads --> CB
+    CB -- injected into --> CMD
     SK -- writes --> SLC
-    SK -- injects --> CMD
     SK -- runs --> BK
     SK -- runs --> RS
     SK -- writes --> ST

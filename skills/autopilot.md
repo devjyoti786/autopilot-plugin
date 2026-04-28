@@ -95,9 +95,8 @@ Store the parsed JSON as **TEMPLATE**.
 
 ### Step 7 — Inject CLAUDE.md block
 
-1. Read the file `{PLUGIN_PATH}/claude-md-blocks/autopilot-instructions.md`.
+1. Read the file `{PLUGIN_PATH}/claude-md-blocks/autopilot-instructions-{mode}.md` (e.g., `autopilot-instructions-yolo.md` for yolo mode). Each mode has its own dedicated file with no cross-mode annotations — this prevents ambiguity.
 2. In the content read from that file:
-   - Replace every occurrence of `{MODE}` with the mode in UPPERCASE (e.g., `STRICT`, `NORMAL`, `YOLO`).
    - Replace every occurrence of `{BACKUP_PATH}` with the actual BACKUP_PATH value.
 3. Find the active CLAUDE.md:
    - If `{WORKSPACE_PATH}/CLAUDE.md` exists: use it.

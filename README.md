@@ -11,7 +11,7 @@ Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt 
 ```mermaid
 flowchart TD
     A(["/autopilot [mode]"]) --> B["Backup workspace\ncp -r, excludes node_modules / .git / etc"]
-    B --> C["Merge permissions template\ninto settings.local.json"]
+    B --> C["Merge permissions template\ninto settings.local.json\n(includes autoMode config)"]
     C --> D["Inject CLAUDE.md block\nautopilot rules + mode placeholders"]
     D --> E["Write state file\nmode / backupPath / workspacePath / log"]
     E --> F(["Autopilot active — enter your task"])
@@ -23,11 +23,21 @@ flowchart TD
     SUDO -->|yes| ASK["Ask ONE question:\nwill you allow sudo?"]
     ASK -->|yes| CONF["Check autopilot-sudo.conf\nread or save password"]
     CONF --> EXEC1
-    SUDO -->|"saved / not needed"| EXEC1["Claude executes autonomously\nallowlist-based — logs every tool call"]
+    SUDO -->|"saved / not needed"| EXEC1["Claude attempts tool call"]
+
+    EXEC1 --> PERM{"Permission check"}
+    PERM -->|"static allow list"| RUN1["Execute immediately"]
+    PERM -->|"permissions.deny match\nstrict only"| BLOCK["Hard block — Claude\ntries alternative approach"]
+    PERM -->|"goes to classifier"| CLASS{"AI Classifier\nevaluates action"}
+    CLASS -->|"safe"| RUN1
+    CLASS -->|"risky — soft_deny"| PROMPT["Block + redirect Claude\nto alternative"]
+    CLASS -->|"3x in a row\nor 20x total"| FALLBACK["Fallback to\nuser prompt"]
+    PROMPT --> EXEC1
+    BLOCK --> EXEC1
 
     SPLIT -->|yolo| EXEC2["Claude executes autonomously\nbypassPermissions — zero prompts\nlogs every tool call"]
 
-    EXEC1 --> GATE(["Please test what was built.\nOr add/change anything — just type it."])
+    RUN1 --> GATE(["Please test what was built.\nOr add/change anything — just type it."])
     GATE --> RESP{"User response"}
     RESP -->|"more requirements"| IMP["Implement autonomously"]
     IMP --> GATE
@@ -96,11 +106,70 @@ For terminals that cannot render Mermaid:
 
 ## Safety Levels
 
-| Mode | Auto-approves | Pauses for | Human interaction |
-|------|--------------|------------|-------------------|
-| `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push, DROP TABLE, credential writes | Sudo consent (once) + test gate + end confirmation |
-| `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | Nothing (logs risky ops) | Sudo consent (once) + test gate + end confirmation |
-| `yolo` | Everything (`bypassPermissions`) | Nothing | **None** — fully autonomous start to finish |
+| Mode | Static allow list | Hard deny (`permissions.deny`) | Classifier (`autoMode`) | Human interaction |
+|------|-------------------|-------------------------------|-------------------------|-------------------|
+| `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push (never bypassed) | Default blocks + extra: DROP TABLE, plaintext credential writes | Sudo consent (once) + test gate + end confirmation |
+| `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | none | Default blocks + extra allow: package installs when user-requested | Sudo consent (once) + test gate + end confirmation |
+| `yolo` | Everything (`bypassPermissions`) | none | **No classifier** — all tool calls execute immediately | **None** — fully autonomous start to finish |
+
+---
+
+## Auto-Mode Classifier
+
+Auto mode is Claude Code's built-in AI permission layer. Instead of asking you to approve every tool call, it evaluates each action before it runs and decides automatically.
+
+### Decision flow (normal / strict)
+
+```
+Tool call attempted
+        │
+        ▼
+1. Static allow/deny (permissions.allow / permissions.deny in settings.local.json)
+   → allow match: execute immediately
+   → deny match: hard block, Claude tries alternative  [strict only]
+        │ no match
+        ▼
+2. Read-only + working-directory file edits → auto-approved
+        │ everything else
+        ▼
+3. AI Classifier reads: action + full transcript + autoMode config
+   → soft_deny match: block, Claude redirected to try differently
+   → allow exception match: override block, execute
+   → explicit user intent ("force-push this branch"): override soft_deny
+        │ blocked 3× in a row OR 20× total
+        ▼
+4. Fallback to user prompt (auto mode pauses)
+```
+
+### Per-mode configuration
+
+**Strict mode** — `templates/strict.json`
+- `permissions.deny` hard-blocks: `rm -rf *`, `git push --force*`, `git push -f *`
+- `autoMode.soft_deny` extras: DROP TABLE/DATABASE, plaintext credential writes to tracked files
+- `autoMode.environment`: declares strict/cautious dev profile to classifier
+
+**Normal mode** — `templates/normal.json`
+- No hard denies
+- `autoMode.allow` extras: package installs via apt/brew/pip/npm/pnpm/npx when user-requested
+- `autoMode.environment`: declares broad dev environment profile
+
+**Yolo mode** — `templates/yolo.json`
+- `bypassPermissions`: classifier does not run, all tool calls execute immediately
+
+### Inspect classifier rules
+
+```bash
+# See what the classifier uses in your current session
+claude auto-mode config
+
+# See built-in defaults (allow + soft_deny lists)
+claude auto-mode defaults
+
+# Get AI critique of your custom rules
+claude auto-mode critique
+```
+
+> Auto mode requires a Claude Team, Enterprise, Max, or API plan. Not available on Pro. Run `claude --enable-auto-mode` to enable it if you haven't already.
 
 ---
 
@@ -279,7 +348,7 @@ graph LR
         SK["skills/autopilot.md"]
         SH["skills/autopilot-help.md"]
         TM["templates/<br/>strict / normal / yolo"]
-        CB["claude-md-blocks/<br/>autopilot-instructions.md"]
+        CB["claude-md-blocks/<br/>autopilot-instructions-*.md"]
         LG["hooks/<br/>autopilot-logger.sh"]
         BK["scripts/<br/>autopilot-backup.sh"]
         RS["scripts/<br/>autopilot-restore.sh"]
@@ -294,12 +363,13 @@ graph LR
 
     subgraph Runtime["Runtime State"]
         ST["~/.claude/<br/>autopilot-state.json"]
-        SLC["~/.claude/<br/>settings.local.json"]
+        SLC["~/.claude/<br/>settings.local.json<br/>(permissions + autoMode)"]
         SJ["~/.claude/<br/>settings.json"]
         CMD["CLAUDE.md<br/>autopilot block"]
         BKD["~/.claude/<br/>autopilot-backups/"]
         LOG["~/.claude/<br/>autopilot-sessions/"]
         SUP["~/.claude/<br/>autopilot-sudo.conf"]
+        CLS["Auto-Mode Classifier<br/>(Claude Code built-in)"]
     end
 
     MP -- registers --> CC
@@ -320,6 +390,8 @@ graph LR
     IN -- patches --> SJ
     IN -- creates --> ST
     SK -- manages --> SUP
+    SLC -- configures --> CLS
+    CLS -- evaluates every tool call --> SLC
 ```
 
 ---

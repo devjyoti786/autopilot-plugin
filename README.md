@@ -252,28 +252,28 @@ Nothing is shown when autopilot is off.
 
 ```mermaid
 graph LR
-    subgraph Plugin Files
-        PJ[plugin.json]
-        SK[skills/autopilot.md]
-        SH[skills/autopilot-help.md]
-        TM[templates/\nstrict|normal|yolo]
-        CB[claude-md-blocks/\nautopilot-instructions.md]
-        LG[hooks/\nautopilot-logger.sh]
-        BK[scripts/\nautopilot-backup.sh]
-        RS[scripts/\nautopilot-restore.sh]
-        SL[scripts/\nautopilot-statusline.sh]
-        IN[scripts/\ninstall.sh]
-        UN[scripts/\nuninstall.sh]
+    subgraph Plugin["Plugin Files"]
+        PJ["plugin.json"]
+        SK["skills/autopilot.md"]
+        SH["skills/autopilot-help.md"]
+        TM["templates/<br/>strict / normal / yolo"]
+        CB["claude-md-blocks/<br/>autopilot-instructions.md"]
+        LG["hooks/<br/>autopilot-logger.sh"]
+        BK["scripts/<br/>autopilot-backup.sh"]
+        RS["scripts/<br/>autopilot-restore.sh"]
+        SL["scripts/<br/>autopilot-statusline.sh"]
+        IN["scripts/install.sh"]
+        UN["scripts/uninstall.sh"]
     end
 
-    subgraph Runtime State
-        ST[~/.claude/\nautopilot-state.json]
-        SLC[~/.claude/\nsettings.local.json]
-        SJ[~/.claude/\nsettings.json]
-        CMD[CLAUDE.md\nautopilot block]
-        BKD[~/.claude/\nautopilot-backups/]
-        LOG[~/.claude/\nautopilot-sessions/]
-        SUP[~/.claude/\nautopilot-sudo.conf]
+    subgraph Runtime["Runtime State"]
+        ST["~/.claude/<br/>autopilot-state.json"]
+        SLC["~/.claude/<br/>settings.local.json"]
+        SJ["~/.claude/<br/>settings.json"]
+        CMD["CLAUDE.md<br/>autopilot block"]
+        BKD["~/.claude/<br/>autopilot-backups/"]
+        LOG["~/.claude/<br/>autopilot-sessions/"]
+        SUP["~/.claude/<br/>autopilot-sudo.conf"]
     end
 
     SK -- reads --> TM

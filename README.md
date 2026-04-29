@@ -12,7 +12,11 @@ Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt 
 flowchart TD
     A(["/autopilot [mode]"]) --> B["Backup workspace\ncp -r, excludes node_modules / .git / etc"]
     B --> C["Merge permissions template\ninto settings.local.json\n(includes autoMode config)"]
-    C --> D["Inject CLAUDE.md block\nautopilot rules + mode placeholders"]
+    C --> UNLOCK{"Mode?"}
+    UNLOCK -->|"normal / strict"| ENA["claude --enable-auto-mode\nsilent, errors ignored"]
+    UNLOCK -->|"yolo"| ENB["claude --allow-dangerously-skip-permissions\nsilent, errors ignored"]
+    ENA --> D["Inject CLAUDE.md block\nautopilot rules + mode placeholders"]
+    ENB --> D
     D --> E["Write state file\nmode / backupPath / workspacePath / log"]
     E --> F(["Autopilot active — enter your task"])
 
@@ -64,6 +68,11 @@ For terminals that cannot render Mermaid:
       │                                                          │
       ▼                                                          │
  Merge permissions ──► settings.local.json                       │
+      │                                                          │
+      ▼                                                          │
+ Unlock mode prerequisite (silent)                               │
+ ├── normal/strict: claude --enable-auto-mode -p ""              │
+ └── yolo:          claude --allow-dangerously-skip-permissions   │
       │                                                          │
       ▼                                                          │
  Inject CLAUDE.md block (<!-- autopilot:start/end -->)           │

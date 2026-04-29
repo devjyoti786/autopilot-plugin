@@ -21,8 +21,8 @@
       "keywords": ["autopilot", "autonomous", "yolo", "zero-interrupt", "productivity"],
       "tags": ["autopilot", "autonomous", "yolo", "productivity", "automation"],
       "source": {
-        "source": "github",
-        "repo": "devjyoti786/autopilot-plugin"
+        "source": "url",
+        "url": "https://github.com/devjyoti786/autopilot-plugin.git"
       }
     }
   ]

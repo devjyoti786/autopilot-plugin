@@ -4,6 +4,10 @@ Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt 
 
 ![version](https://img.shields.io/badge/version-1.0.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-Claude%20Code-blueviolet)
 
+```bash
+claude plugin marketplace add devjyoti786/autopilot-plugin && claude plugin install autopilot@autopilot-plugin
+```
+
 ---
 
 ## How It Works
@@ -187,20 +191,27 @@ claude auto-mode critique
 
 ## Installation
 
-### Method 1: Claude Code Plugin System (Recommended)
+### Method 1: One-line install (Recommended)
 
 ```bash
-# Clone the repo
-git clone https://github.com/[USERNAME]/autopilot-plugin ~/.claude/plugins/autopilot-plugin
+claude plugin marketplace add devjyoti786/autopilot-plugin && claude plugin install autopilot@autopilot-plugin
+```
 
-# Install the plugin
+Then run the setup script once:
+
+```bash
+bash ~/.claude/plugins/cache/autopilot-plugin/autopilot/*/scripts/install.sh
+```
+
+### Method 2: Clone and install manually
+
+```bash
+git clone https://github.com/devjyoti786/autopilot-plugin ~/.claude/plugins/autopilot-plugin
 claude plugin install ~/.claude/plugins/autopilot-plugin
-
-# Run install script
 bash ~/.claude/plugins/autopilot-plugin/scripts/install.sh
 ```
 
-### Method 2: Manual
+### Method 3: Manual (no plugin system)
 
 1. Clone repo to `~/.claude/plugins/autopilot-plugin/`
 2. Run `bash scripts/install.sh` (patches `settings.json` statusLine)

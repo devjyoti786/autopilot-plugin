@@ -173,11 +173,46 @@ Replace all placeholders with their actual values. For `sessionLog`, use the she
 
 ### Step 10 — Confirm to user
 
+**If mode is `normal` or `strict`:**
+
 Say exactly:
 
 > 🤖 Autopilot **{MODE}** active. Workspace backed up to `{BACKUP_PATH}`. Enter your task.
 
-Then immediately begin following the autopilot rules injected into CLAUDE.md (the block you just wrote in Step 7). Do not wait for further setup instructions — the user's next message is their task.
+Then immediately begin following the autopilot rules injected into CLAUDE.md. Do not wait for further setup instructions — the user's next message is their task.
+
+**If mode is `yolo`:**
+
+Run:
+
+```bash
+bash "{PLUGIN_PATH}/scripts/autopilot-launch-yolo.sh" "{WORKSPACE_PATH}"
+```
+
+Capture stdout. Then:
+
+- If stdout contains `LAUNCHED`: Say exactly:
+  > 🤖 Autopilot **YOLO** setup complete. Workspace backed up to `{BACKUP_PATH}`.
+  >
+  > A new terminal has opened with `claude --dangerously-skip-permissions`. Switch to it and enter your task there — YOLO mode is active in that window.
+
+- If stdout contains `WARP_FALLBACK`: Say exactly:
+  > 🤖 Autopilot **YOLO** setup complete. Workspace backed up to `{BACKUP_PATH}`.
+  >
+  > Warp is open. In the Warp terminal, run:
+  > ```bash
+  > cd {WORKSPACE_PATH} && claude --dangerously-skip-permissions
+  > ```
+
+- If stdout contains `MANUAL` (no supported terminal found): Say exactly:
+  > 🤖 Autopilot **YOLO** setup complete. Workspace backed up to `{BACKUP_PATH}`.
+  >
+  > ⚠️ No supported terminal emulator detected. Run manually:
+  > ```bash
+  > cd {WORKSPACE_PATH} && claude --dangerously-skip-permissions
+  > ```
+
+Do NOT begin following YOLO autopilot rules in this session — they activate automatically when the new session starts.
 
 ### Step 11 — Sudo Consent Gate
 

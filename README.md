@@ -123,7 +123,7 @@ For terminals that cannot render Mermaid:
 |------|-------------------|-------------------------------|-------------------------|-------------------------|-------------------|
 | `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push (never bypassed) | Default blocks + extra: DROP TABLE, plaintext credential writes | `claude --enable-auto-mode` | Sudo consent (once) + test gate + end confirmation |
 | `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | none | Default blocks + extra allow: package installs when user-requested | `claude --enable-auto-mode` | Sudo consent (once) + test gate + end confirmation |
-| `yolo` | Everything (`bypassPermissions`) | none | **No classifier** — all tool calls execute immediately | `claude --allow-dangerously-skip-permissions` | **None** — fully autonomous start to finish |
+| `yolo` | Everything (`bypassPermissions`) | none | **No classifier** — all tool calls execute immediately | Opens new terminal with `claude --dangerously-skip-permissions` | **None** — fully autonomous start to finish. New terminal opens automatically on activation. |
 
 ---
 
@@ -247,7 +247,7 @@ Then just type your task. That's it.
 |---------|-------------|
 | `/autopilot strict` | Safe mode — pauses before destructive ops |
 | `/autopilot normal` | Broad auto-approval — most dev tasks |
-| `/autopilot yolo` | Full bypass — trust everything |
+| `/autopilot yolo` | Full bypass — trust everything. Opens new terminal with `--dangerously-skip-permissions` automatically. |
 | `/autopilot off` | Deactivate, delete backup, restore settings |
 | `/autopilot status` | Show current mode, backup path, log path |
 | `/autopilot-help` | Full reference card |

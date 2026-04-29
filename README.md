@@ -115,11 +115,11 @@ For terminals that cannot render Mermaid:
 
 ## Safety Levels
 
-| Mode | Static allow list | Hard deny (`permissions.deny`) | Classifier (`autoMode`) | Human interaction |
-|------|-------------------|-------------------------------|-------------------------|-------------------|
-| `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push (never bypassed) | Default blocks + extra: DROP TABLE, plaintext credential writes | Sudo consent (once) + test gate + end confirmation |
-| `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | none | Default blocks + extra allow: package installs when user-requested | Sudo consent (once) + test gate + end confirmation |
-| `yolo` | Everything (`bypassPermissions`) | none | **No classifier** — all tool calls execute immediately | **None** — fully autonomous start to finish |
+| Mode | Static allow list | Hard deny (`permissions.deny`) | Classifier (`autoMode`) | Auto-unlock on activate | Human interaction |
+|------|-------------------|-------------------------------|-------------------------|-------------------------|-------------------|
+| `strict` | git, npm, node, python, basic file ops | `rm -rf`, force push (never bypassed) | Default blocks + extra: DROP TABLE, plaintext credential writes | `claude --enable-auto-mode` | Sudo consent (once) + test gate + end confirmation |
+| `normal` | Everything in strict + curl, apt, brew, systemctl, chmod, pip, npx, pnpm | none | Default blocks + extra allow: package installs when user-requested | `claude --enable-auto-mode` | Sudo consent (once) + test gate + end confirmation |
+| `yolo` | Everything (`bypassPermissions`) | none | **No classifier** — all tool calls execute immediately | `claude --allow-dangerously-skip-permissions` | **None** — fully autonomous start to finish |
 
 ---
 
@@ -153,16 +153,19 @@ Tool call attempted
 ### Per-mode configuration
 
 **Strict mode** — `templates/strict.json`
+- Auto-unlock: `claude --enable-auto-mode` runs silently at activation
 - `permissions.deny` hard-blocks: `rm -rf *`, `git push --force*`, `git push -f *`
 - `autoMode.soft_deny` extras: DROP TABLE/DATABASE, plaintext credential writes to tracked files
 - `autoMode.environment`: declares strict/cautious dev profile to classifier
 
 **Normal mode** — `templates/normal.json`
+- Auto-unlock: `claude --enable-auto-mode` runs silently at activation
 - No hard denies
 - `autoMode.allow` extras: package installs via apt/brew/pip/npm/pnpm/npx when user-requested
 - `autoMode.environment`: declares broad dev environment profile
 
 **Yolo mode** — `templates/yolo.json`
+- Auto-unlock: `claude --allow-dangerously-skip-permissions` runs silently at activation
 - `bypassPermissions`: classifier does not run, all tool calls execute immediately
 
 ### Inspect classifier rules
@@ -178,7 +181,7 @@ claude auto-mode defaults
 claude auto-mode critique
 ```
 
-> Auto mode requires a Claude Pro, Team, Enterprise, Max, or API plan. Run `claude --enable-auto-mode` to enable it if you haven't already.
+> Auto mode requires a Claude Pro, Team, Enterprise, Max, or API plan. The plugin automatically runs `claude --enable-auto-mode` when activating normal or strict mode — no manual setup needed.
 
 ---
 

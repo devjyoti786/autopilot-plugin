@@ -1,6 +1,6 @@
 # Claude Code Autopilot
 
-Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt task execution inside Claude Code. You enter a prompt, Claude executes the entire task — file edits, shell commands, installs, git operations — without stopping to ask for confirmations. In `normal`/`strict` mode a test gate lets you verify results before closing. In `yolo` mode Claude declares complete and cleans up automatically — zero human interaction from start to finish.
+Claude Code Autopilot is a plugin that enables fully autonomous, zero-interrupt task execution inside Claude Code. You enter a prompt, Claude executes the entire task — file edits, shell commands, installs, git operations — without stopping to ask for confirmations. In `normal`/`strict` mode a test gate lets you verify results before closing. In `yolo` mode, activation automatically opens a **new terminal window** running `claude --dangerously-skip-permissions` — switch to it and enter your task. Zero human interaction from start to finish.
 
 ![version](https://img.shields.io/badge/version-1.0.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-Claude%20Code-blueviolet)
 
@@ -22,7 +22,14 @@ flowchart TD
     ENA --> D["Inject CLAUDE.md block\nautopilot rules + mode placeholders"]
     ENB --> D
     D --> E["Write state file\nmode / backupPath / workspacePath / log"]
-    E --> F(["Autopilot active — enter your task"])
+    E --> MODECHECK{"Mode?"}
+
+    MODECHECK -->|"normal / strict"| F(["Autopilot active — enter your task"])
+    MODECHECK -->|"yolo"| LAUNCH["Run autopilot-launch-yolo.sh\nDetect terminal emulator"]
+    LAUNCH --> TCHECK{"Terminal\nfound?"}
+    TCHECK -->|"terminal detected"| NEWTERM(["New terminal opened\nSwitch to it — YOLO active there"])
+    TCHECK -->|"warp only"| WARPT(["Warp opened\nRun printed command in Warp"])
+    TCHECK -->|"none found"| MANUAL(["Print restart command\nRun manually"])
 
     F --> G["User enters task prompt"]
     G --> SPLIT{"Mode?"}
@@ -43,7 +50,8 @@ flowchart TD
     PROMPT --> EXEC1
     BLOCK --> EXEC1
 
-    SPLIT -->|yolo| EXEC2["Claude executes autonomously\nbypassPermissions — zero prompts\nlogs every tool call"]
+    NEWTERM --> G2["User enters task prompt\n(in new YOLO terminal)"]
+    G2 --> EXEC2["Claude executes autonomously\nbypassPermissions — zero prompts\nlogs every tool call"]
 
     RUN1 --> GATE(["Please test what was built.\nOr add/change anything — just type it."])
     GATE --> RESP{"User response"}
@@ -85,12 +93,32 @@ For terminals that cannot render Mermaid:
  Write state file (~/.claude/autopilot-state.json)              │
       │                                                     BACKUP
       ▼                                                     EXISTS
+ ┌────────────────────────────────────────────────────┐         │
+ │ Mode branch                                        │         │
+ ├── normal/strict ──► "Autopilot active — enter task"│         │
+ │                                                    │         │
+ └── yolo ──► autopilot-launch-yolo.sh                │         │
+              Detect terminal emulator                │         │
+              ├─► found  ──► NEW TERMINAL OPENS       │         │
+              │             (claude --dangerously-     │         │
+              │              skip-permissions)         │         │
+              ├─► warp   ──► Warp opens, print cmd    │         │
+              └─► none   ──► Print restart command    │         │
+ └────────────────────────────────────────────────────┘         │
+      │                                                          │
+      ▼  (normal/strict path continues; yolo: in new terminal)  │
  USER ENTERS TASK                                                │
       │                                                          │
       ▼                                                          │
  Claude executes ──► zero interrupts ──► logs every tool call    │
       │                                                          │
       ├─── strict/normal ──────────────────────────────────────  │
+      │         │                                                │
+      │         ▼                                                │
+      │    Permission check                                      │
+      │    ├─► static allow list ──► execute immediately         │
+      │    ├─► permissions.deny (strict) ──► hard block          │
+      │    └─► AI Classifier ──► safe/soft_deny/fallback         │
       │         │                                                │
       │         ▼                                                │
       │    [sudo needed? ask once → save to autopilot-sudo.conf] │
@@ -106,10 +134,11 @@ For terminals that cannot render Mermaid:
       │         └─► Success: "Complete. Test again or end?"
       │                  └─► "end" ──► Delete backup ──► off
       │
-      └─── yolo ──────────────────────────────────────────────────
+      └─── yolo (in new terminal, bypassPermissions active) ─────
                 │
                 ▼
            [no sudo consent, no test gate, no end confirmation]
+           [all tool calls execute immediately — no classifier]
                 │
                 ▼
            Auto-delete backup ──► /autopilot off
@@ -375,6 +404,7 @@ graph LR
         LG["hooks/<br/>autopilot-logger.sh"]
         BK["scripts/<br/>autopilot-backup.sh"]
         RS["scripts/<br/>autopilot-restore.sh"]
+        LY["scripts/<br/>autopilot-launch-yolo.sh"]
         SL["scripts/<br/>autopilot-statusline.sh"]
         IN["scripts/install.sh"]
         UN["scripts/uninstall.sh"]
@@ -393,6 +423,7 @@ graph LR
         LOG["~/.claude/<br/>autopilot-sessions/"]
         SUP["~/.claude/<br/>autopilot-sudo.conf"]
         CLS["Auto-Mode Classifier<br/>(Claude Code built-in)"]
+        NW["New Terminal Window<br/>(claude --dangerously-skip-permissions)<br/>yolo only"]
     end
 
     MP -- registers --> CC
@@ -405,6 +436,7 @@ graph LR
     SK -- writes --> SLC
     SK -- runs --> BK
     SK -- runs --> RS
+    SK -- runs --> LY
     SK -- writes --> ST
     SK -- modifies --> SJ
     BK -- creates --> BKD
@@ -413,6 +445,7 @@ graph LR
     IN -- patches --> SJ
     IN -- creates --> ST
     SK -- manages --> SUP
+    LY -- opens --> NW
     SLC -- configures --> CLS
     CLS -- evaluates every tool call --> SLC
 ```
@@ -462,6 +495,7 @@ rm -f ~/.claude/autopilot-sudo.conf
 | `hooks/autopilot-logger.sh` | PostToolUse audit logger |
 | `scripts/autopilot-backup.sh` | Workspace backup (cp -r) |
 | `scripts/autopilot-restore.sh` | Workspace restore (cp -r) |
+| `scripts/autopilot-launch-yolo.sh` | YOLO: open new terminal with `--dangerously-skip-permissions` |
 | `scripts/autopilot-statusline.sh` | Status bar [AP:MODE] component |
 | `scripts/install.sh` | Plugin installation |
 | `scripts/uninstall.sh` | Plugin removal |
